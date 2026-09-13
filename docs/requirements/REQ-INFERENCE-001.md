@@ -1,12 +1,11 @@
 ---
-
 id: REQ-INFERENCE-001
 title: LocalForge 로컬 LLM 추론 환경 구축
 status: 초안
 owners: [LocalForge]
 created: 2026-09-13
 last_reviewed: 2026-09-13
--------------------------
+---
 
 # 요구사항: LocalForge 로컬 LLM 추론 환경 구축
 
@@ -167,19 +166,19 @@ LocalForge는 개인 개발 환경에서 로컬 LLM을 실행하고 OpenAI-compa
 
 * 아키텍처:
 
-  * `docs/architecture/localforge-runtime.md` 예정
+  * [실행 구조](../architecture/localforge-runtime.md)
 
 * ADR:
 
-  * `docs/decisions/ADR-001-inference-runtime-baseline.md` 예정
+  * [baseline 결정](../decisions/ADR-001-inference-runtime-baseline.md)
 
 * 명세:
 
-  * `docs/specs/inference-api.md` 예정
+  * [API 부분집합](../specs/inference-api.md)
 
 * 작업:
 
-  * `tasks/T001-local-inference-baseline/` 예정
+  * [T001 진행 기록](../../tasks/T001-local-inference-baseline/README.md)
 
 * 테스트:
 
