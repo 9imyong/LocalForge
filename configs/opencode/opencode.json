@@ -1,0 +1,76 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "enabled_providers": [
+    "localforge"
+  ],
+  "model": "localforge/localforge-baseline",
+  "small_model": "localforge/localforge-baseline",
+  "share": "disabled",
+  "autoupdate": false,
+  "compaction": {
+    "auto": false
+  },
+  "provider": {
+    "localforge": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LocalForge",
+      "options": {
+        "baseURL": "{env:LOCALFORGE_BASE_URL}"
+      },
+      "models": {
+        "localforge-baseline": {
+          "name": "LocalForge baseline",
+          "limit": {
+            "context": 4096,
+            "output": 512
+          },
+          "temperature": true
+        }
+      }
+    }
+  },
+  "permission": {
+    "*": "deny"
+  },
+  "agent": {
+    "localforge": {
+      "description": "Local inference integration test",
+      "mode": "primary",
+      "prompt": "Use tools without narration. Follow the requested order. Read files before editing. Never stage or commit. Stop after verifying tests and git diff.",
+      "temperature": 0,
+      "steps": 10,
+      "permission": {
+        "*": "deny",
+        "edit": "allow",
+        "bash": {
+          "*": "deny",
+          "ls": "allow",
+          "ls *": "allow",
+          "cat README.md calculator.py test_calculator.py": "allow",
+          "cat calculator.py": "allow",
+          "cat test_calculator.py": "allow",
+          "cat README.md": "allow",
+          "grep *": "allow",
+          "python3 -m unittest*": "allow",
+          "git diff*": "allow",
+          "git status*": "allow"
+        },
+        "external_directory": "deny",
+        "read": "allow"
+      }
+    },
+    "chat": {
+      "description": "Local prompt and streaming probe",
+      "mode": "primary",
+      "prompt": "You are a concise helpful assistant.",
+      "temperature": 0,
+      "steps": 2,
+      "permission": {
+        "*": "deny"
+      }
+    }
+  },
+  "default_agent": "localforge",
+  "lsp": false,
+  "formatter": false
+}

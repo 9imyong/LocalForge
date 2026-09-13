@@ -18,3 +18,13 @@ test:
 
 evidence:
 	bash scripts/evidence.sh
+
+.PHONY: opencode-install opencode-smoke
+opencode-install:
+	bash scripts/opencode-install.sh
+opencode-smoke:
+	python3 scripts/opencode-smoke.py
+
+.PHONY: tool-smoke
+tool-smoke:
+	bash scripts/tool-calling-smoke.sh

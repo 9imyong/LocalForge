@@ -5,7 +5,7 @@ WSL2의 개인 GPU에서 실행하는 로컬 LLM API와 Runtime 비교 기준 �
 - 초기 Runtime: llama.cpp CUDA, 최종 Runtime 확정 아님
 - 장비: Windows 11 / WSL2 Ubuntu / RTX 3090 24GB
 - 모델: Qwen2.5-Coder-7B-Instruct GGUF Q4_K_M, 모델 revision·SHA256 고정
-- 범위: 로컬 API, 스트리밍, 기초 성능 측정; Agent·외부 클라이언트 연결은 후속
+- 범위: 로컬 API, 스트리밍, 기초 성능 측정 및 OpenCode 연결 검증; 작은 fixture의 Agent 도구 실행 검증 완료
 
 ## 실행
 
@@ -25,12 +25,27 @@ make down
 
 - 기본 LOG_VERBOSITY=4: CUDA offload 진단 포함, 개인 프롬프트 사용 시 debug 5 이상 설정 주의
 - `.env`는 신뢰하는 로컬 shell 설정 파일, Git 제외
+- `CHAT_TEMPLATE_FILE`은 현재 모델의 도구 호환 template, 빈 값은 T001 내장 template 복원; [원인·검증·되돌리기](docs/operations/tool-calling.md) 참조
 - `MODEL_DIR`, `MODEL_FILE`, `MODEL_SHA256`, `MODEL_REV`, `MODEL_REPO`를 모델 변경 시 함께 지정
 - Runtime 변경 시 `LLAMA_REV`와 `IMAGE`를 함께 갱신하고 재빌드
 - 포트 기본 18000, 호스트 `127.0.0.1`에만 게시
 - `make up`은 컨테이너 시작만 수행, 준비·추론 성공은 `make smoke`로 확인
 - `make down` 후 `make up`으로 재실행, 중복 up은 기존 컨테이너가 있으면 실패
 - 타 서비스 종료·드라이버 교체·시스템 CUDA 변경 없음
+
+## OpenCode 연동
+
+- 설치·일반 prompt·스트리밍·실제 Coding Agent fixture E2E 검증 완료
+- 가중치·Runtime·context 유지, tool template 호환성 수정과 재현 절차는 [OpenCode 운영 안내](docs/operations/opencode.md) 참조
+
+```bash
+make opencode-install
+make tool-smoke
+make opencode-smoke
+```
+
+- `tool-smoke`와 `opencode-smoke` 성공 시 종료 코드 0, 도구 미실행·테스트 실패·예상 외 변경 시 1 반환
+- context 4096 및 최대 10단계의 제한된 fixture 검증, 최종 자연어 요약과 큰 프로젝트 작업 안정성은 별도 과제
 
 ## API 예제
 

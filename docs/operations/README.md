@@ -4,6 +4,8 @@
 
 ## 문서 구성
 
+- [Tool Calling 호환성](tool-calling.md)
+- [OpenCode 연동 및 검증](opencode.md)
 - [배포 및 되돌리기](deployment.md)
 - [모니터링](monitoring.md)
 - [장애 대응](incident-response.md)

@@ -15,5 +15,9 @@
 
 ### 추가
 
+- 현재 Qwen GGUF의 tool template 호환성 수정 및 직접 API 일반/SSE 도구 계약 검사 추가, T002 차단 해소
+
+- OpenCode 1.18.30 로컬 provider·격리 실행·실제 도구 검증 smoke 추가, 일반 응답·SSE·제한된 fixture Agent E2E 검증
+
 - 프로젝트 문서 체계의 기본 구조를 추가했습니다.
 - arc42 관점의 Architecture 문서, C4 다이어그램, 문서 수명 주기와 AI Agent 작업 흐름을 보완했습니다.

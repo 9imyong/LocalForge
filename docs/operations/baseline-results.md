@@ -28,7 +28,7 @@ last_reviewed: 2026-09-13
 ## 재기동 후 측정
 
 | 지표 | 결과 | 해석 |
-|---|---|---|
+| --- | --- | --- |
 | 모델 초기화 | 4.066초 | loading model → model loaded, context·warmup 포함 |
 | 시작 → 준비 확인 | 6.451초 | Docker 시작·polling 포함 |
 | TTFT | 21.604 / 13.390 / 12.868ms | 첫 내용 청크까지, prompt cache 57토큰 재사용 |
@@ -64,3 +64,9 @@ last_reviewed: 2026-09-13
 - `.local/results/load-time.json`: 모델 초기화 시간
 - `.local/results/gpu-before.csv`, `gpu.csv`, `image-id.txt`: 장치·이미지 식별 결과
 - 결과 파일은 개인 환경 산출물로 Git 제외, 공유용 수치만 본 문서에 기록
+
+## Tool Calling 후속 변경
+
+- 본문의 T001 성능 결과는 당시 내장 template의 측정 기록으로 보존
+- 동일 가중치·Runtime·context에서 도구 호환 template 및 OpenCode fixture 검증 추가
+- 현재 구성·회귀 결과: [Tool Calling 운영 기록](tool-calling.md)
