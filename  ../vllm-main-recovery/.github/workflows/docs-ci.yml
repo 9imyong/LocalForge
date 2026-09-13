@@ -1,0 +1,34 @@
+name: 문서 검사
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+      - 'docs/specs/**/*.yaml'
+      - 'docs/specs/**/*.yml'
+      - '.github/workflows/docs-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - 'docs/specs/**/*.yaml'
+      - 'docs/specs/**/*.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  documentation:
+    name: 마크다운과 링크 검사
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 가져오기
+        uses: actions/checkout@v4
+      - name: 마크다운 형식 검사
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: '**/*.md'
+      - name: 링크 검사
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress --exclude-path .git '**/*.md'
