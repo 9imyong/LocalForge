@@ -178,7 +178,7 @@ LocalForge는 개인 개발 환경에서 로컬 LLM을 실행하고 OpenAI-compa
 
 * 작업:
 
-  * [T001 진행 기록](../../tasks/T001-local-inference-baseline/README.md)
+  * [T001 진행 기록](../tasks/completed/T001-local-inference-baseline/README.md)
 
 * 테스트:
 

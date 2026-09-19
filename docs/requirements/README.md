@@ -2,7 +2,7 @@
 
 ## 프로젝트 요구사항
 
-- [REQ-LOCAL-001: 로컬 한국어 대화 및 코딩 지원](REQ-LOCAL-001.md) — 초안
+- [REQ-INFERENCE-001: 로컬 추론 baseline](REQ-INFERENCE-001.md)
 
 ## 작성 안내
 

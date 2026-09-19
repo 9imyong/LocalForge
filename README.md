@@ -91,7 +91,7 @@ nvidia-smi --query-gpu=name,memory.used,utilization.gpu --format=csv
 - [baseline 결정](docs/decisions/ADR-001-inference-runtime-baseline.md)
 - [API 부분집합](docs/specs/inference-api.md)
 - [실측 결과와 남은 위험](docs/operations/baseline-results.md)
-- [작업 기록](tasks/T001-local-inference-baseline/README.md)
+- [작업 기록](docs/tasks/completed/T001-local-inference-baseline/README.md)
 - [작업 규칙](AGENTS.md), [커밋 규칙](COMMIT_RULES.md)
 
 모델·Runtime의 라이선스는 각 공식 배포의 조건 적용. LocalForge 자체 라이선스는 미선정.
