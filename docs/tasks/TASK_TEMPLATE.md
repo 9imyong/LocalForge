@@ -53,6 +53,23 @@ updated: YYYY-MM-DD
 - [ ] 정적 분석
 - [ ] 수동 확인이 필요한 항목
 
+## 외부 검토
+
+규모 판정과 그 근거는 `Progress Notes`에 기록합니다. Small은 이 절을 `해당 없음 (Small)`으로 둡니다.
+
+| 역할 | 수행 여부 | verdict | 결과 파일 |
+|---|---|---|---|
+| Planning Critic | 수행 / 생략 / `SKIPPED:<사유>` | `OK` 또는 `CONCERNS` | `active/reviews/<TASK-ID>/planning-01.json` |
+| Independent Reviewer | 수행 / 생략 / `SKIPPED:<사유>` | `PASS` 또는 `FAIL` | `active/reviews/<TASK-ID>/review-01.json` |
+
+`severity`가 `blocker` 또는 `high`인 finding은 전부 판정을 남깁니다. 기계적으로 반영하지 않으며, `REJECT`는 근거 없이 남기지 않습니다.
+
+| Finding | 판정 | 근거 |
+|---|---|---|
+| F1 | `ACCEPT` / `REJECT` / `NEEDS_INVESTIGATION` | |
+
+검토를 생략했거나 `SKIPPED`가 발생했으면 사유와 그때 무엇으로 대신했는지를 적습니다. 조용히 넘어가지 않습니다.
+
 ## 위험과 되돌리기
 
 실패 가능성, 영향 범위, 안전하게 되돌리는 방법을 작성합니다.

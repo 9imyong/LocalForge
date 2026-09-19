@@ -36,6 +36,42 @@
 
 예외를 적용해도 관련 테스트와 문서 영향 확인은 수행한다. 기존 Task가 있으면 같은 목적의 새 Task를 만들지 않는다. 문서가 없다는 이유만으로 현재 작업 범위를 임의로 확대하지 않는다.
 
+## 외부 검토
+
+구현 전 계획과 구현 후 diff를 외부 검토자(Claude)에게 보낸다. 최종 결정권은 이 저장소에서 작업하는 주 세션에 있다.
+
+### 규모 판정
+
+변경의 **성격**으로 판정한다. 파일 개수는 기준이 아니다.
+
+| 규모 | 조건 | Planning Critic | Independent Reviewer |
+|---|---|---|---|
+| Small | 국소 변경이고 계약·데이터 구조·보안·실행 구조가 모두 불변이며 기존 테스트로 검증 가능 | 생략 | 생략 |
+| Medium | 새 기능, 여러 구성 요소에 영향, 내부 interface 변경, 새 테스트 전략 필요, regression 가능성 중 하나 이상 | 위험이 있을 때만 | 수행 |
+| Large | 아키텍처 변경, 인증·보안, 실행·배포 구조, 추론 파이프라인, 되돌리기 어려운 변경 중 하나 이상 | 수행 | 수행 |
+
+판정 결과와 근거 한 줄을 Task 문서 `Progress Notes`에 남긴다. 애매하면 상위로 올린다.
+
+### 호출
+
+```bash
+/home/joon/code/agent-harness/bin/claude-review.sh plan|review \
+  --task <TASK-ID> --project /home/joon/code/LocalForge --context <pack.md>
+```
+
+context pack은 Markdown 파일 하나로 조립한다. 양식은 `agent-harness/DESIGN.md` §5.1. 대화 이력은 전달하지 않고, 파일 전체 대신 발췌와 `path:line`을 쓴다. 상한은 40KB(soft) / 80KB(hard)이고, 넘으면 발췌를 줄이거나 Task를 쪼갠다.
+
+종료 코드: `0` 지적 없음, `1` 지적 있음(실패 아님), `2` `SKIPPED:<사유>`, `3` 사용법 오류.
+
+### 판정과 기록
+
+- `blocker`·`high` finding은 전부 `ACCEPT` / `REJECT` / `NEEDS_INVESTIGATION` 판정을 Task 문서 `## 외부 검토` 절에 남긴다. 기계적으로 전부 반영하지 않는다.
+- 판정 집계는 `reviews/<TASK-ID>/metrics.jsonl`에 반영한다.
+  `/home/joon/code/agent-harness/bin/record-disposition.sh <reviews-dir> <role> <accepted> <rejected> <needs_investigation>`
+- 역할별 호출은 Task당 **최대 2회**. 3회째가 필요하면 직접 판단하고 그 사실을 기록한다.
+- 테스트가 실패한 상태로 `review`를 보내지 않는다.
+- `SKIPPED`가 나오면 자체 검토로 진행하되, 사유와 대체 수단을 Task 문서와 사용자 보고 양쪽에 남긴다. **검토 생략을 조용히 넘어가지 않는다.**
+
 ## 문서 갱신 기준
 
 - 동작이나 성공 조건 변경: 요구사항 갱신
