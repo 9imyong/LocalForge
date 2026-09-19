@@ -10,7 +10,7 @@ related_decisions: []
 
 ## 문서 목적
 
-작은 프로젝트에서 현재 시스템의 핵심 구조를 한 문서로 관리하기 위한 통합 템플릿입니다. 규모가 커지면 [아키텍처 안내](README.md)의 개별 문서로 내용을 분리하고 이 문서에서는 링크합니다.
+작은 프로젝트에서 현재 시스템의 핵심 구조를 한 문서로 관리하기 위한 통합 템플릿입니다. 규모가 커지면 [아키텍처 안내](README.md)의 분리 기준에 따라 관점별 문서로 나눕니다.
 
 ## 언제 수정하는가
 
@@ -33,11 +33,11 @@ related_decisions: []
 
 ## 맥락과 범위
 
-사용자, 외부 시스템, 책임 경계를 설명하고 [C4 System Context](diagrams/c4/context.md)를 링크합니다.
+사용자, 외부 시스템, 책임 경계를 설명합니다. 필요하면 Mermaid 다이어그램을 이 섹션에 직접 넣습니다.
 
 ## 구성 요소
 
-주요 실행 단위, 책임, 인터페이스, 데이터 소유권을 설명하고 [C4 Container](diagrams/c4/container.md)를 링크합니다. Component는 필요한 경우에만 사용합니다.
+주요 실행 단위, 책임, 인터페이스, 데이터 소유권을 설명합니다.
 
 ## 실행 흐름
 
@@ -73,7 +73,4 @@ related_decisions: []
 
 - 요구사항:
 - ADR:
-- 명세:
-- 운영 문서:
-
-개별 관점이 필요하면 [제약 사항](constraints.md), [해결 전략](solution-strategy.md), [공통 개념](crosscutting-concepts.md), [품질](quality.md), [위험과 기술 부채](risks-technical-debt.md)를 사용합니다.
+- Task:
