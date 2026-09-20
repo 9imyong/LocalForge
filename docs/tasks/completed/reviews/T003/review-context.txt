@@ -1,0 +1,529 @@
+# TASK
+T003: 고정 한국어·코딩 응답 품질 평가. 기존 모델/Runtime/template 유지, 생성 코드 실행 및 완전 자동 정답 채점 제외.
+# ACCEPTANCE CRITERIA
+- 한 명령으로 전체 세트 실행
+- 결과 파일 저장과 동일 조건 재실행 비교
+- 한국어 산문의 비한국어 문자 혼입 후보 자동 수치 기록
+- 모델/Runtime commit/실행 조건 기록 및 다른 조건 비교 거부
+- 자동 측정과 수동 판정 항목 구분
+- 실행 방법/해석 운영 문서
+# RELEVANT ARCHITECTURE CONSTRAINTS
+기존 llama.cpp CUDA baseline, HTTP API 경계. 새 표준 라이브러리 client 추가; API/ADR 변경 없음. .local/results/ 결과 Git 제외. 코드 실행 없음.
+# DIFF
+```diff
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index d77531a..c67724f 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -15,6 +15,8 @@
+ 
+ ### 추가
+ 
++- 고정 한국어·코딩 응답 8건 평가와 동일 조건 비교 명령 추가, 문자 혼입 후보 자동 집계·수동 기준·실행 조건 기록
++
+ - 현재 Qwen GGUF의 tool template 호환성 수정 및 직접 API 일반/SSE 도구 계약 검사 추가, T002 차단 해소
+ 
+ - OpenCode 1.18.30 로컬 provider·격리 실행·실제 도구 검증 smoke 추가, 일반 응답·SSE·제한된 fixture Agent E2E 검증
+diff --git a/Makefile b/Makefile
+index 0d42fc1..236d267 100644
+--- a/Makefile
++++ b/Makefile
+@@ -16,6 +16,10 @@ smoke:
+ test:
+ 	python3 -m unittest discover -s tests -v
+ 
++.PHONY: quality-eval
++quality-eval:
++	bash scripts/quality-eval.sh
++
+ evidence:
+ 	bash scripts/evidence.sh
+ 
+diff --git a/README.md b/README.md
+index a5e4fee..b4f6520 100644
+--- a/README.md
++++ b/README.md
+@@ -58,6 +58,9 @@ curl http://127.0.0.1:18000/v1/chat/completions \
+ 
+ ## 검증과 측정
+ 
++- 한국어·코딩 고정 평가: `make quality-eval`, [실행·비교·수동 판정 안내](docs/operations/quality-evaluation.md)
++- 문자 혼입 후보 수치와 응답 보관, 자동 코딩 정답 판정·모델 품질 합격 주장은 제외
++
+ ```bash
+ make test
+ bash scripts/smoke.sh --runs 5
+diff --git a/docs/architecture/localforge-runtime.md b/docs/architecture/localforge-runtime.md
+index 903f25e..1012efb 100644
+--- a/docs/architecture/localforge-runtime.md
++++ b/docs/architecture/localforge-runtime.md
+@@ -1,7 +1,7 @@
+ ---
+ status: 현재
+ owners: [LocalForge]
+-last_reviewed: 2026-09-13
++last_reviewed: 2026-09-20
+ ---
+ 
+ # LocalForge baseline 실행 구조
+@@ -15,6 +15,8 @@ flowchart LR
+     Model[로컬 GGUF 읽기 전용] --> Server
+     Probe[smoke.py] --> Server
+     Probe --> Metrics[로컬 JSON 결과]
++    Quality[quality-eval.py] --> Server
++    Quality --> Metrics
+ ```
+ 
+ - 구성 파일: `.env.example` 기본값과 개인 `.env` 덮어쓰기
+@@ -26,6 +28,8 @@ flowchart LR
+ - 재현성과 재기동: [실행 안내](../../README.md)
+ - 상태: CUDA 빌드·GPU offload·일반/스트리밍 API·재기동 검증 완료
+ - 측정 조건과 한계: [검증 결과](../operations/baseline-results.md)
++- 응답 품질: 고정 세트 8건을 별도 HTTP 클라이언트로 실행, 실제 baseline 구성 검증 후 조건·응답·문자 혼입 후보·수동 기준을 로컬 JSON에 저장
++- 동일 조건 fingerprint의 완전한 결과만 비교, 생성 코드 실행 없음. [품질 평가 안내](../operations/quality-evaluation.md)
+ 
+ ## OpenCode 연결 상태
+ 
+diff --git a/docs/requirements/REQ-INFERENCE-001.md b/docs/requirements/REQ-INFERENCE-001.md
+index 4bff410..4bfb811 100644
+--- a/docs/requirements/REQ-INFERENCE-001.md
++++ b/docs/requirements/REQ-INFERENCE-001.md
+@@ -4,7 +4,7 @@ title: LocalForge 로컬 LLM 추론 환경 구축
+ status: 초안
+ owners: [LocalForge]
+ created: 2026-09-13
+-last_reviewed: 2026-09-13
++last_reviewed: 2026-09-20
+ ---
+ 
+ # 요구사항: LocalForge 로컬 LLM 추론 환경 구축
+@@ -23,12 +23,12 @@ LocalForge는 개인 개발 환경에서 로컬 LLM을 실행하고 OpenAI-compa
+ 
+ ## 이해관계자
+ 
+-| 역할             | 필요한 결과                                                  |
++| 역할 | 필요한 결과 |
+ | -------------- | ------------------------------------------------------- |
+-| 개발자            | 로컬 LLM을 Coding Agent 및 개발 도구에서 사용할 수 있어야 한다.            |
+-| LocalForge 운영자 | 모델, Runtime, 설정 및 GPU 자원 사용 상태를 관리할 수 있어야 한다.           |
+-| AI Agent       | 표준화된 API를 통해 LLM 추론 기능을 사용할 수 있어야 한다.                   |
+-| 외부 클라이언트       | 향후 MacBook 등 다른 장치에서도 동일한 LocalForge API에 접근할 수 있어야 한다. |
++| 개발자 | 로컬 LLM을 Coding Agent 및 개발 도구에서 사용할 수 있어야 한다. |
++| LocalForge 운영자 | 모델, Runtime, 설정 및 GPU 자원 사용 상태를 관리할 수 있어야 한다. |
++| AI Agent | 표준화된 API를 통해 LLM 추론 기능을 사용할 수 있어야 한다. |
++| 외부 클라이언트 | 향후 MacBook 등 다른 장치에서도 동일한 LocalForge API에 접근할 수 있어야 한다. |
+ 
+ ## 요구사항
+ 
+@@ -46,6 +46,7 @@ LocalForge는 개인 개발 환경에서 로컬 LLM을 실행하고 OpenAI-compa
+ * REQ-INFERENCE-001-12: Benchmark는 최소 TTFT, generation throughput, VRAM 사용량, model load time을 측정할 수 있어야 한다.
+ * REQ-INFERENCE-001-13: LocalForge의 Runtime 변경이 Agent 사용 방식에 불필요한 변경을 발생시키지 않아야 한다.
+ * REQ-INFERENCE-001-14: Agent가 프로젝트 파일 탐색, 수정, 명령 실행 및 테스트 수행에 LLM을 사용할 수 있어야 한다.
++* REQ-INFERENCE-001-15: 고정된 한국어·코딩 평가 세트를 단일 명령으로 실행하고 응답·혼입 후보 문자 수·모델·Runtime·실행 조건을 기록해야 한다. 동일 조건 결과의 비교와 조건 불일치 거부, 자동 수치와 수동 판정 기준의 구분을 제공해야 한다.
+ 
+ ## 인수 조건
+ 
+@@ -133,6 +134,13 @@ LocalForge는 개인 개발 환경에서 로컬 LLM을 실행하고 OpenAI-compa
+ 
+ ## 품질과 제약
+ 
++* 응답 품질 측정:
++
++  * 고정 프롬프트·판정 규칙·실행 조건을 결과에 기록하고 재실행 가능하도록 제공
++  * 코드 제외 산문의 비한국어 문자 혼입 후보 수치화, 영문 기술 용어·고유명사의 문맥 판정은 수동 검토
++  * 수치 수집 성공과 모델 품질 합격 구분, 코딩 정답의 완전 자동 채점 제외
++  * [평가 운영 절차](../operations/quality-evaluation.md), [T003](../tasks/active/T003-korean-coding-quality-eval.md)
++
+ * 보안:
+ 
+   * LLM API를 인증 없이 Public Internet에 직접 노출하지 않는다.
+--- /dev/null
++++ b/scripts/quality-eval.py
+@@ -0,0 +1,253 @@
++#!/usr/bin/env python3
++"""Fixed local baseline quality observations; never execute generated code."""
++import argparse
++from datetime import datetime, timezone
++import hashlib
++import json
++import os
++from pathlib import Path
++import re
++import subprocess
++import unicodedata
++import uuid
++
++from smoke import request
++
++ROOT = Path(__file__).resolve().parents[1]
++DETECTOR = 'unicode-prose-v1'
++
++
++def digest(value):
++    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
++                                     separators=(',', ':')).encode()).hexdigest()
++
++
++def file_hash(path):
++    h = hashlib.sha256()
++    with open(path, 'rb') as f:
++        for chunk in iter(lambda: f.read(1024 * 1024), b''):
++            h.update(chunk)
++    return h.hexdigest()
++
++
++def prose_only(text):
++    """Exclude fenced and inline code; unclosed fences consume the remainder."""
++    lines = []
++    fence = None
++    for line in text.splitlines(keepends=True):
++        match = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', line.rstrip('\r\n'))
++        if fence:
++            if match and match[1][0] == fence[0] and len(match[1]) >= len(fence) and not match[2].strip():
++                fence = None
++            continue
++        if match:
++            fence = match[1]
++            continue
++        lines.append(line)
++    return re.sub(r'(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)', '', ''.join(lines), flags=re.S)
++
++
++def analyze(text):
++    prose = unicodedata.normalize('NFC', prose_only(text))
++    counts = {'hangul_letters': 0, 'latin_letters': 0, 'other_letters': 0}
++    others = {}
++    for ch in prose:
++        if not unicodedata.category(ch).startswith('L'):
++            continue
++        name = unicodedata.name(ch, '')
++        if name.startswith('HANGUL'):
++            counts['hangul_letters'] += 1
++        elif 'LATIN' in name:
++            counts['latin_letters'] += 1
++        else:
++            counts['other_letters'] += 1
++            others[ch] = others.get(ch, 0) + 1
++    total = sum(counts.values())
++    return {**counts, 'counted_letters': total,
++            'other_letter_ratio': counts['other_letters'] / total if total else None,
++            'other_characters': others,
++            'status': ('not_assessable' if not total else
++                       'needs_manual_review' if counts['other_letters'] or not counts['hangul_letters']
++                       else 'no_candidate_detected')}
++
++
++def load_suite(path):
++    suite = json.loads(Path(path).read_text())
++    if not isinstance(suite.get('version'), str) or not suite.get('cases'):
++        raise ValueError('Suite version and nonempty cases required')
++    seen = set()
++    for case in suite['cases']:
++        if (not isinstance(case.get('id'), str) or not case['id'] or case['id'] in seen
++                or case.get('category') not in ('korean', 'coding')
++                or not isinstance(case.get('prompt'), str) or not case['prompt'].strip()
++                or not isinstance(case.get('rubric'), list) or not case['rubric']
++                or not all(isinstance(x, str) and x.strip() for x in case['rubric'])):
++            raise ValueError('Invalid or duplicate suite case')
++        seen.add(case['id'])
++    return suite
++
++
++def docker_json(*args):
++    return json.loads(subprocess.check_output(['docker', *args], text=True, timeout=30))[0]
++
++
++def template_matches(file_text, effective):
++    # Pinned server omits one final LF in /props. Do not strip meaningful whitespace.
++    return effective in (file_text, file_text.removesuffix('\n'))
++
++
++def baseline_identity(base, model):
++    """Validate declared configuration against the running local container."""
++    keys = ('LLAMA_REV', 'IMAGE', 'MODEL_REPO', 'MODEL_REV', 'MODEL_FILE',
++            'MODEL_SHA256', 'CONTEXT', 'GPU_LAYERS', 'GPU_ID')
++    declared = {key: os.environ[key] for key in keys}
++    container = docker_json('inspect', 'localforge-baseline')
++    if not container['State']['Running']:
++        raise ValueError('Baseline container is not running')
++    image = docker_json('image', 'inspect', declared['IMAGE'])
++    if image['Id'] != container['Image']:
++        raise ValueError('Running image differs from configured IMAGE')
++    ports = container['NetworkSettings']['Ports'].get('8080/tcp') or []
++    if not any(p['HostIp'] == '127.0.0.1' and p['HostPort'] == os.getenv('PORT', '18000') for p in ports):
++        raise ValueError('Baseline port binding differs from configuration')
++    cmd = container['Config']['Cmd']
++
++    def option(name):
++        return cmd[cmd.index(name) + 1] if name in cmd else None
++
++    expected = {'--model': '/models/' + declared['MODEL_FILE'], '--alias': model,
++                '--ctx-size': declared['CONTEXT'], '--n-gpu-layers': declared['GPU_LAYERS'],
++                '--parallel': '1'}
++    if any(option(k) != v for k, v in expected.items()):
++        raise ValueError('Running model/context/GPU layers differ from configuration')
++    devices = container['HostConfig'].get('DeviceRequests') or []
++    if not any(d.get('DeviceIDs') == [declared['GPU_ID']] for d in devices):
++        raise ValueError('GPU device differs from configuration')
++    mounts = {m['Destination']: m for m in container['Mounts']}
++    model_path = Path(mounts['/models']['Source']) / declared['MODEL_FILE']
++    if file_hash(model_path) != declared['MODEL_SHA256']:
++        raise ValueError('Actual model SHA256 differs from configuration')
++    with request(base, '/props') as response:
++        props = json.load(response)
++    with request(base, '/v1/models') as response:
++        models = json.load(response)
++    if model not in [m['id'] for m in models['data']]:
++        raise ValueError('Configured model not advertised')
++    build = props['build_info']
++    commit = build.rsplit('-', 1)[-1]
++    if len(commit) < 7 or not declared['LLAMA_REV'].startswith(commit):
++        raise ValueError('Runtime build does not match declared commit')
++    template = props['chat_template']
++    if not isinstance(template, str) or not template:
++        raise ValueError('Server did not expose its effective template')
++    template_file = os.getenv('CHAT_TEMPLATE_FILE', '')
++    source = 'builtin'
++    template_file_sha256 = None
++    if template_file:
++        source = 'file'
++        configured = Path(template_file)
++        if not configured.is_absolute():
++            configured = ROOT / configured
++        mounted = mounts.get('/config/chat-template.jinja', {}).get('Source')
++        if (option('--chat-template-file') != '/config/chat-template.jinja' or not mounted
++                or Path(mounted).resolve() != configured.resolve()
++                or not template_matches(configured.read_text(), template)):
++            raise ValueError('Effective template differs from configured file')
++        template_file_sha256 = file_hash(configured)
++    elif option('--chat-template-file') is not None:
++        raise ValueError('Expected builtin template, found file override')
++    if props['default_generation_settings']['n_ctx'] != int(declared['CONTEXT']):
++        raise ValueError('Server effective context differs from configuration')
++    return {'declared': declared, 'image_id': container['Image'], 'server_build': build,
++            'model_alias': model, 'template_source': source,
++            'template_sha256': hashlib.sha256(template.encode()).hexdigest(),
++            'template_file_sha256': template_file_sha256,
++            'server_generation_defaults': props['default_generation_settings']}
++
++
++def run_suite(suite, conditions, base, model, send=request):
++    results = []
++    for case in suite['cases']:
++        row = {'id': case['id'], 'category': case['category'], 'prompt': case['prompt'],
++               'manual': {'status': 'pending', 'rubric': case['rubric']},
++               'status': 'error', 'response': None, 'automatic': None}
++        try:
++            payload = {'model': model, 'messages': [{'role': 'user', 'content': case['prompt']}],
++                       **conditions['generation'], 'stream': False}
++            with send(base, '/v1/chat/completions', payload, timeout=120) as response:
++                data = json.load(response)
++            choice = data['choices'][0]
++            content = choice['message']['content']
++            if not isinstance(content, str) or not content.strip():
++                raise ValueError('Empty or non-text response')
++            row.update(response=content, finish_reason=choice.get('finish_reason'),
++                       usage=data.get('usage'), automatic=analyze(content))
++            row['status'] = 'ok' if choice.get('finish_reason') == 'stop' else 'incomplete'
++        except (OSError, ValueError, KeyError, IndexError, TypeError) as exc:
++            # Persist type only: transport messages can include private URLs or server data.
++            row['error'] = type(exc).__name__
++        results.append(row)
++    return {'schema_version': 1, 'created_at': datetime.now(timezone.utc).isoformat(),
++            'conditions': conditions, 'fingerprint': digest(conditions),
++            'status': 'complete' if all(r['status'] == 'ok' for r in results) else 'incomplete',
++            'cases': results}
++
++
++def compare(a, b):
++    for result in (a, b):
++        conditions = result['conditions']
++        if (result.get('schema_version') != 1 or result.get('status') != 'complete'
++                or result.get('fingerprint') != digest(conditions)
++                or not result.get('cases')
++                or any(r.get('status') != 'ok' for r in result['cases'])
++                or [r['id'] for r in result['cases']] != conditions['case_ids']):
++            raise ValueError('Incomplete or inconsistent result cannot be compared')
++    if a['fingerprint'] != b['fingerprint']:
++        raise ValueError('Conditions differ; comparison refused')
++    return {'fingerprint': a['fingerprint'], 'manual_verdict': 'not_graded',
++            'cases': [{'id': x['id'], 'response_changed': x['response'] != y['response'],
++                       'other_letters_before': x['automatic']['other_letters'],
++                       'other_letters_after': y['automatic']['other_letters'],
++                       'other_letters_delta': y['automatic']['other_letters'] - x['automatic']['other_letters']}
++                      for x, y in zip(a['cases'], b['cases'])]}
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--suite', type=Path, default=ROOT / 'evals/korean-coding-v1.json')
++    parser.add_argument('--output', type=Path)
++    parser.add_argument('--compare', nargs=2, type=Path, metavar=('BEFORE', 'AFTER'))
++    parser.add_argument('--max-tokens', type=int, default=768)
++    args = parser.parse_args()
++    try:
++        if args.compare:
++            print(json.dumps(compare(*(json.loads(p.read_text()) for p in args.compare)), ensure_ascii=False, indent=2))
++            return 0
++        if args.max_tokens < 1:
++            parser.error('--max-tokens must be positive')
++        output = args.output or ROOT / '.local/results/quality' / (
++            datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S') + '-' + uuid.uuid4().hex[:8] + '.json')
++        if output.exists():
++            raise ValueError('Output already exists; refusing to overwrite')
++        suite = load_suite(args.suite)
++        base = 'http://127.0.0.1:' + os.environ.get('PORT', '18000')
++        model = os.environ.get('MODEL_ALIAS', 'localforge-baseline')
++        identity = baseline_identity(base, model)
++        conditions = {'identity': identity, 'suite_version': suite['version'], 'suite_sha256': digest(suite),
++                      'case_ids': [c['id'] for c in suite['cases']], 'detector': DETECTOR,
++                      'unicode_version': unicodedata.unidata_version,
++                      'generation': {'temperature': 0, 'seed': 42, 'max_tokens': args.max_tokens},
++                      'concurrency': 1}
++        result = run_suite(suite, conditions, base, model)
++        output.parent.mkdir(parents=True, exist_ok=True)
++        with output.open('x') as f:
++            json.dump(result, f, ensure_ascii=False, indent=2)
++            f.write('\n')
++        print(f"status={result['status']} cases={len(result['cases'])} result={output}")
++        return 0 if result['status'] == 'complete' else 1
++    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as exc:
++        parser.exit(1, f'Evaluation failed ({type(exc).__name__}): {exc}\n')
++
++
++if __name__ == '__main__':
++    raise SystemExit(main())
+--- /dev/null
++++ b/scripts/quality-eval.sh
+@@ -0,0 +1,4 @@
++#!/usr/bin/env bash
++source "$(dirname "$0")/common.sh"
++cd "$ROOT"
++python3 scripts/quality-eval.py "$@"
+--- /dev/null
++++ b/evals/korean-coding-v1.json
+@@ -0,0 +1,13 @@
++{
++  "version": "korean-coding-v1",
++  "cases": [
++    {"id": "ko-explain", "category": "korean", "prompt": "파이썬 리스트와 튜플의 차이를 한국어 세 문장으로 설명하세요. 코드 예제는 쓰지 마세요.", "rubric": ["리스트의 변경 가능성과 튜플의 변경 불가능성 설명", "한국어 세 문장, 코드 없음", "부자연스러운 외국어 혼입 없음"]},
++    {"id": "ko-summary", "category": "korean", "prompt": "다음 글을 한국어 한 문장으로 요약하세요: 팀은 월요일에 오류를 발견했다. 화요일에 원인을 분석했고 수요일에 수정했다. 수정 후 모든 테스트가 통과했다.", "rubric": ["오류 발견·분석·수정·검증 흐름 보존", "한국어 한 문장", "원문에 없는 정보 추가 없음"]},
++    {"id": "ko-instructions", "category": "korean", "prompt": "비밀번호를 안전하게 관리하는 방법을 한국어로 정확히 세 항목만 작성하세요. 각 항목은 숫자 1, 2, 3으로 시작하고 제목과 맺음말은 쓰지 마세요.", "rubric": ["번호가 붙은 정확히 세 항목", "안전한 관리 방법과 정확한 설명", "제목·맺음말 없음"]},
++    {"id": "ko-terms", "category": "korean", "prompt": "HTTP API에서 timeout과 retry의 차이를 초보자에게 한국어 두 문장으로 설명하세요. 이 영문 기술 용어는 그대로 써도 됩니다.", "rubric": ["대기 시간 제한과 재시도 구분", "한국어 두 문장과 자연스러운 기술 용어 사용", "무조건 재시도가 안전하다는 주장 없음"]},
++    {"id": "code-divide", "category": "coding", "prompt": "Python 함수 divide(a, b)를 작성하세요. b가 0이면 ValueError를 발생시키고 그 외에는 a / b를 반환해야 합니다. 코드 블록 하나와 한국어 설명 한 문장을 작성하세요.", "rubric": ["b == 0에서 명시적 ValueError", "일반 입력의 나눗셈 반환", "코드와 한국어 설명 제공"]},
++    {"id": "code-dedup", "category": "coding", "prompt": "해시 가능한 값의 리스트를 받아 처음 등장한 순서를 유지하며 중복을 제거하는 Python 함수 unique(items)를 작성하세요. 입력을 수정하지 마세요. 코드 블록 하나와 한국어 설명 한 문장을 작성하세요.", "rubric": ["첫 등장 순서와 원본 보존", "빈 입력과 중복 입력 처리", "코드와 한국어 설명 제공"]},
++    {"id": "code-fix", "category": "coding", "prompt": "다음 Python 함수가 마지막 원소도 합산하도록 버그를 수정하세요: def total(xs):\n    return sum(xs[:-1])\n빈 리스트 결과는 0이어야 합니다. 수정 코드 블록 하나와 한국어 설명 한 문장을 작성하세요.", "rubric": ["모든 원소 합산", "빈 리스트에서 0", "오류 원인에 대한 한국어 설명"]},
++    {"id": "code-tests", "category": "coding", "prompt": "Python 함수 is_even(n)이 n % 2 == 0을 반환한다고 가정하세요. unittest로 0, 양의 홀수, 음의 짝수를 검사하는 테스트를 작성하세요. 코드 블록 하나와 한국어 설명 한 문장을 작성하세요.", "rubric": ["unittest 형태와 세 경계 사례", "예상값 True, False, True", "코드와 한국어 설명 제공"]}
++  ]
++}
+--- /dev/null
++++ b/docs/operations/quality-evaluation.md
+@@ -0,0 +1,90 @@
++---
++status: 현재
++owners: [LocalForge]
++last_reviewed: 2026-09-20
++---
++
++# 한국어·코딩 응답 품질 평가
++
++- 목적: 고정된 한국어 4건·코딩 4건의 응답과 문자 혼입 후보 기록
++- 전제: 기존 baseline 서버 실행, Docker 접근, `.env.example` 및 `.env`가 실제 서버 구성과 일치
++- 평가 세트: [korean-coding-v1.json](../../evals/korean-coding-v1.json)
++- 실행 코드: [quality-eval.py](../../scripts/quality-eval.py), Python 표준 라이브러리 사용
++- 생성된 코드 실행 없음, 정확성·지시 준수·자연스러움은 수동 판정
++
++## 실행과 비교
++
++```bash
++make quality-eval
++# 기본 출력: .local/results/quality/<UTC 시각>-<고유 ID>.json
++bash scripts/quality-eval.sh --output .local/results/quality/run-a.json
++bash scripts/quality-eval.sh --output .local/results/quality/run-b.json
++bash scripts/quality-eval.sh --compare \
++  .local/results/quality/run-a.json .local/results/quality/run-b.json
++```
++
++- 같은 출력 파일이 있으면 덮어쓰기 거부
++- 요청 조건: temperature=0, seed=42, max_tokens=768, 동시성 1, 사례마다 독립 대화
++- `--max-tokens`로 상한 변경 가능, 조건이 다른 결과 간 비교는 거부
++- 실패한 요청도 기록하고 남은 사례 실행. 빈 응답·API 오류·`finish_reason != stop`은 불완전 결과 처리
++- 종료 코드 0: 전체 응답 수집 완료, 모델 품질 합격 의미 아님
++- 종료 코드 1: 불완전 수집·구성 불일치·비교 거부·입출력 오류
++- 서버·모델 검증 단계에서 실패하면 평가 시작 전 종료, 결과 파일 미생성
++- 결과 및 고정 프롬프트 응답은 Git 제외 `.local/results/`에 보관
++
++## 기록 조건과 비교 제한
++
++- 모델: 설정의 repository·revision·SHA256과 실제 마운트된 GGUF SHA256 대조
++- Runtime: 선언한 전체 commit과 서버 build의 짧은 commit 대조, 실제 컨테이너 image ID 기록
++- 서버: 컨테이너 실행 인자의 모델·context·GPU layers·parallel, GPU 장치와 포트 설정 대조
++- Template: 서버가 제공한 실제 template SHA256 기록, 파일 override 사용 시 파일 내용·마운트 대조
++- 고정 Runtime이 `/props`에서 생략하는 마지막 LF 1개 차이만 허용, 파일 원본 SHA256도 별도 기록
++- 내장 template: `template_source=builtin`, 서버 제공 template의 SHA256 기록. null로 처리하지 않음
++- 나머지 조건: 서버 generation 기본값, 평가 세트 내용 SHA256·버전·사례 ID, 판정 규칙·Unicode 버전, 요청 조건
++- 전체 조건의 fingerprint가 다르거나 결과가 불완전하면 비교 거부
++- 비교 출력: 사례별 응답 변화 여부와 혼입 후보 문자 수의 전후 차이. 품질 향상·정답 여부 자동 판정 없음
++- 고정 seed·temperature도 GPU 실행의 완전한 결정성을 보장하지 않음. 동일 조건 반복 관찰 용도
++- 실행 중 모델 파일·template·서버 재기동·설정 변경 금지. 시작 시점 검증이며 실행 중 변경 감시는 미지원
++- Runtime 전체 commit은 선언값이며 실제 build가 제공하는 짧은 commit과 대조한 수준. image ID를 함께 보존
++
++## 자동 수치 해석
++
++| 필드 | 의미 |
++| --- | --- |
++| `hangul_letters` | 코드 제외 산문의 한글 문자 수, NFC 정규화 적용 |
++| `latin_letters` | Latin 문자 수, 영문 기술 용어와 외국어 문장을 자동 구분하지 않음 |
++| `other_letters` | 한글·Latin 이외 Unicode 문자 범주 L의 수, 한자·가나 등 혼입 후보 |
++| `other_letter_ratio` | 기타 문자 / 집계 문자 전체, 분모가 0이면 null |
++| `other_characters` | 혼입 후보 문자별 빈도 |
++| `status` | 후보 없음·수동 검토 필요·판정 불가 상태 |
++
++- fenced code와 inline code 제외. 닫히지 않은 fence 이후도 코드로 취급
++- 숫자·구두점·공백·기호·emoji·결합 부호는 집계 제외
++- `no_candidate_detected`: 기타 문자 0이며 한글 존재. 한국어 품질 합격 의미 아님
++- `needs_manual_review`: 기타 문자 존재 또는 집계 문자 중 한글 없음
++- `not_assessable`: 코드만 있거나 집계 문자 없음. 자동 합격으로 취급 금지
++- 한자 고유명사 등 정상 사용도 후보로 집계 가능. Cyrillic 등의 다른 문자는 후보에 포함
++- 영어 혼입의 자연스러움, 들여쓰기 코드·HTML 등 Markdown 변형, 문맥상 허용되는 외국어는 수동 확인
++
++## 수동 판정
++
++1. 각 사례의 `response`와 `manual.rubric` 대조
++2. 정확성·요청 형식 준수·자연스러움을 사례별로 기록
++3. 원본 결과 보존, 같은 이름의 별도 `.manual.md`에 사례 ID·pass/fail/unverified·근거 기록
++4. 자동 수치와 수동 판정을 합친 총점 또는 모델 전반의 합격 주장 금지
++
++- 최초 결과의 `manual.status=pending`, 자동 채점 대상과 명시적으로 구분
++- 8건은 작은 진단 세트이며 대표성·품질 우위·회귀율 추정 근거로 부족
++- 세트 수정 시 version 변경 권장, 내용 해시가 달라지면 기존 결과와 직접 비교 불가
++
++## 검증
++
++```bash
++make test
++python3 -m py_compile scripts/quality-eval.py
++bash -n scripts/quality-eval.sh
++```
++
++- 단위 테스트: 문자 범주·code 제외·빈 산문·응답 오류 후 지속·잘림·조건 불일치·파일 보존
++- 실제 baseline 수집과 기존 smoke 회귀는 로컬 수동 실행, GPU CI 실행은 범위 밖
++- 작업 및 최초 실행 근거: [T003](../tasks/active/T003-korean-coding-quality-eval.md)
+
+```
+# CHANGED FILES (필요 구간 발췌)
+tests/test_quality_eval.py: 신규 17개 테스트. Unicode 범주/숫자·구두점 제외/fenced·inline code/한글 없음/빈 산문/최종 LF 차이/전체 8건 payload/오류·빈 응답·잘림 후 지속/비교 조건 변경·사례 누락/파일 보존/내장 template/실제 모델 hash·Runtime·context 불일치 거부 검증.
+docs/tasks/active/T003-korean-coding-quality-eval.md: 계획·Medium 판정·검증 근거·Planning finding 3개 ACCEPT 기록. 완료 전 Independent 결과 대기.
+# TEST RESULTS
+- make test: 기존 9 + 신규 17 = 26 passed
+- make quality-eval: 실제 baseline 8/8 complete (.local/results/quality/20260920T122101-0d70e26b.json)
+- 재실행 8/8 complete (.local/results/quality/t003-repeat.json), --compare 통과
+- 기존 smoke --runs 1: 구현 전·후 모두 통과
+- Python/shell 구문 검사 통과, git diff --check 통과
+- markdownlint-cli2 변경 문서 6개: 0 issues
+- 변경 문서 내부 파일 링크 34개: broken 0 (외부 링크는 미검사)
+# IMPLEMENTATION SUMMARY
+고정 8개 사례 + 별도 evaluator + make target + unit tests + 운영 문서·요구사항·구조 갱신. 숫자/구두점/기호 제외, 개별 오류 이후 지속, 내장 template 식별을 Planning finding 수용으로 구현.
+실제 첫 수집에서 ko-instructions 응답에 키릴 문자 5개 후보 기록. 수집 성공과 품질 합격 구분.
+# KNOWN LIMITATIONS
+Unicode 문자 후보 집계이며 언어 식별 아님; Latin 혼입의 의미는 수동 확인. 작은 진단 세트, 생성 코드 미실행. seed=42도 완전한 결정성 보장 없음. Runtime commit은 선언한 전체 SHA와 서버의 짧은 commit 대조+image ID 기록. 실행 중 서버/파일 변경 감시 없음; 운영 절차에서 금지. 고정 Runtime의 /props template 마지막 LF 1개 생략 실측을 허용하고 원본/서버 hash 모두 기록.

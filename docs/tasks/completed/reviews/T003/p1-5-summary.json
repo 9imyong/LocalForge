@@ -1,0 +1,18 @@
+{
+  "p1_5": "passed",
+  "calls": 3,
+  "successful_calls": 2,
+  "skipped_calls": 1,
+  "dispositions": 2,
+  "accepted": 4,
+  "rejected": 1,
+  "needs_investigation": 0,
+  "acceptance_rate": 0.8,
+  "cost_usd_recorded_successes": 0.6873940000000001,
+  "conversation_history_entries": 0,
+  "schemas_validated": [
+    "planning-02.json",
+    "review-01.json"
+  ],
+  "harness_blocks": 1
+}

@@ -48,7 +48,7 @@ last_reviewed: 2026-09-13
 
 - 짧은 3회 측정이며 부하·장시간 안정성·실제 Coding Agent 품질 검증 아님
 - 수동 한국어 설명에 중국어 단어 혼입 관찰: 한국어 품질 합격을 주장하지 않음
-- 비교 모델 및 한국어·코딩 평가 세트는 후속 작업
+- 비교 모델은 후속 작업. 한국어·코딩 평가 세트는 T003에서 추가, 아래 후속 기록 참조
 - Runtime 간 비교 시 모델·정밀도·tokenizer·context·cache 조건 통제 필요
 - Agent 도구 호출, MacBook·LAN 접근, 인증 확장은 이번 단계 제외
 - 처음 링크 실패는 공식 CUDA Dockerfile의 allow-shlib-undefined 옵션 적용으로 해결
@@ -70,3 +70,13 @@ last_reviewed: 2026-09-13
 - 본문의 T001 성능 결과는 당시 내장 template의 측정 기록으로 보존
 - 동일 가중치·Runtime·context에서 도구 호환 template 및 OpenCode fixture 검증 추가
 - 현재 구성·회귀 결과: [Tool Calling 운영 기록](tool-calling.md)
+
+## 한국어·코딩 품질 측정 후속 기록
+
+- 2026-09-20: 고정 평가 세트 8건을 동일 조건으로 2회 실행, 양쪽 모두 응답 수집 완료
+- 현재 tool template 유지, temperature=0·seed=42·max_tokens=768, 사례별 독립 요청
+- `ko-instructions` 산문에서 키릴 문자 5개를 두 실행 모두 혼입 후보로 검출
+- 두 실행의 조건 fingerprint 동일, 8건 중 1건 응답 변화. 혼입 후보 수의 차이는 전부 0
+- 자동 수치는 언어 식별·코딩 정답·모델 품질 합격 판정이 아님. 사례별 수동 판정은 pending
+- 실행 결과: `.local/results/quality/20260920T122101-0d70e26b.json`, `t003-repeat.json`, `t003-comparison.json`
+- 재현과 해석: [품질 평가 운영 안내](quality-evaluation.md)

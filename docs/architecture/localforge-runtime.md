@@ -1,7 +1,7 @@
 ---
 status: 현재
 owners: [LocalForge]
-last_reviewed: 2026-09-13
+last_reviewed: 2026-09-20
 ---
 
 # LocalForge baseline 실행 구조
@@ -15,6 +15,8 @@ flowchart LR
     Model[로컬 GGUF 읽기 전용] --> Server
     Probe[smoke.py] --> Server
     Probe --> Metrics[로컬 JSON 결과]
+    Quality[quality-eval.py] --> Server
+    Quality --> Metrics
 ```
 
 - 구성 파일: `.env.example` 기본값과 개인 `.env` 덮어쓰기
@@ -26,6 +28,8 @@ flowchart LR
 - 재현성과 재기동: [실행 안내](../../README.md)
 - 상태: CUDA 빌드·GPU offload·일반/스트리밍 API·재기동 검증 완료
 - 측정 조건과 한계: [검증 결과](../operations/baseline-results.md)
+- 응답 품질: 고정 세트 8건을 별도 HTTP 클라이언트로 실행, 실제 baseline 구성 검증 후 조건·응답·문자 혼입 후보·수동 기준을 로컬 JSON에 저장
+- 동일 조건 fingerprint의 완전한 결과만 비교, 생성 코드 실행 없음. [품질 평가 안내](../operations/quality-evaluation.md)
 
 ## OpenCode 연결 상태
 

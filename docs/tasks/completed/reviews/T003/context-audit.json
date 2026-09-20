@@ -1,0 +1,18 @@
+[
+  {
+    "role": "planning",
+    "context_file": "planning-context.txt",
+    "bytes": 3129,
+    "sha256": "4cb0d27fefd49b8cf9bc04111dde9f8a85eb294878404b1dcfc14f3dfe210fd3",
+    "conversation_history_entries": 0,
+    "source": "repository excerpts/diff and task validation facts"
+  },
+  {
+    "role": "review",
+    "context_file": "review-context.txt",
+    "bytes": 30585,
+    "sha256": "76277ed346e113f088ae6d826ead809645bc27c31626ac98adf9de52aa1cc212",
+    "conversation_history_entries": 0,
+    "source": "repository excerpts/diff and task validation facts"
+  }
+]

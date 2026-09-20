@@ -1,0 +1,38 @@
+{
+  "unit_tests": {
+    "passed": 27,
+    "failed": 0
+  },
+  "syntax_checks": "passed",
+  "changed_document_markdown": "passed",
+  "internal_file_links": {
+    "checked": 36,
+    "broken": 0
+  },
+  "external_links": "not_checked",
+  "artifacts": [
+    {
+      "path": ".local/results/quality/20260920T122101-0d70e26b.json",
+      "sha256": "efe3ec2537a0f3c5640eb3d394ca66418fa62cfb680dab3ec107579d35d03f9a"
+    },
+    {
+      "path": ".local/results/quality/t003-repeat.json",
+      "sha256": "c98961132e7f50147b2ce15628730de7f1d836831d4c9cf540c4062ddc0a7c31"
+    },
+    {
+      "path": ".local/results/quality/t003-comparison.json",
+      "sha256": "809ab87f60cf50773206642b2c60f87f90a022bb28881e702818cfc83ece310c"
+    },
+    {
+      "path": ".local/results/t003-smoke-after.json",
+      "sha256": "d023fafa44ce8e6a47219cf3d05239579db3f90f34d610d5de3f58ea1465dcb3"
+    }
+  ],
+  "baseline_case_count": 8,
+  "baseline_runs": 2,
+  "baseline_complete_runs": 2,
+  "candidate_letters": {
+    "ko-instructions": 5
+  },
+  "manual_quality_verdict": "pending"
+}

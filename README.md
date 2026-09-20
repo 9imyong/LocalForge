@@ -58,6 +58,9 @@ curl http://127.0.0.1:18000/v1/chat/completions \
 
 ## 검증과 측정
 
+- 한국어·코딩 고정 평가: `make quality-eval`, [실행·비교·수동 판정 안내](docs/operations/quality-evaluation.md)
+- 문자 혼입 후보 수치와 응답 보관, 자동 코딩 정답 판정·모델 품질 합격 주장은 제외
+
 ```bash
 make test
 bash scripts/smoke.sh --runs 5

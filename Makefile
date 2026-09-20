@@ -16,6 +16,10 @@ smoke:
 test:
 	python3 -m unittest discover -s tests -v
 
+.PHONY: quality-eval
+quality-eval:
+	bash scripts/quality-eval.sh
+
 evidence:
 	bash scripts/evidence.sh
 

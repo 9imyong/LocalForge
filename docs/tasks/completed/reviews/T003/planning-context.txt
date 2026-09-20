@@ -1,0 +1,29 @@
+# TASK
+T003: 한국어·코딩 응답 품질 평가 세트. 기존 baseline 모델을 교체하지 않고 반복 가능한 측정 수단 제공. CI GPU 실행·완전 자동 코딩 정답 채점·성능 측정 제외.
+인수 조건: 단일 명령 전체 실행; 결과 파일·동일 조건 비교; 비한국어 문자 혼입 수치; 모델/Runtime/실행 조건 기록; 자동/수동 판정 분리; 운영 안내.
+
+# RELEVANT REQUIREMENTS
+REQ-INFERENCE-001 품질과 제약: CLI 반복 실행, 고정 모델·Runtime 조건 측정. 응답 품질 측정 요구를 추가 예정.
+
+# RELEVANT ARCHITECTURE CONSTRAINTS
+로컬 llama.cpp HTTP 서버, 모델 로딩은 서버 책임. Python 표준 라이브러리. 기존 API·모델·template 변경 없음. 실행 결과 .local/results/ (Git 제외).
+
+# RELEVANT DECISIONS
+ADR-001: 고정 llama.cpp CUDA·Qwen2.5-Coder-7B-Instruct Q4_K_M, HTTP 경계.
+ADR-003: 별도 Jinja tool template 유지. 한국어/코딩 품질 합격 주장 없음.
+
+# RELEVANT CODE (발췌)
+scripts/smoke.py:15 request(base,path,payload,timeout=120): urllib.request JSON HTTP. :108 payload={model,messages,temperature:0,max_tokens:128,stream:false}. 기존 smoke 수정 없이 별도 evaluator 구현.
+scripts/common.sh:3-8 .env.example 후 .env 로딩; MODEL_DIR 절대 경로화.
+
+# IMPLEMENTATION PLAN
+1. 고정 JSON 평가 세트 추가: 한국어 설명·요약·지시 준수 4건, Python 구현·버그 수정 4건. 각 사례에 ID·prompt·수동 판정 기준 명시.
+2. 표준 라이브러리 기반 `scripts/quality-eval.py`와 `.env` 로딩 wrapper, `make quality-eval` 추가. 기존 HTTP API 사용, 응답 코드 실행 금지, 요청별 오류·빈 응답·잘림 기록 및 실패 종료.
+3. 한국어 산문에서 fenced/inline code를 제외하고 Hangul·Latin·기타 Unicode 문자 수 집계. Latin 기술 용어는 별도 수치로 표시하고 CJK·가나 등 기타 문자는 혼입 후보로 표시. 언어 식별·정답 판정과 구분하고 코드만 있는 응답은 자동 합격 처리 금지.
+4. 모델 revision·SHA256, Runtime commit/image, context·GPU layers, template SHA256, 세트 SHA256, seed·temperature·max_tokens·동시성·판정 버전을 결과에 기록. 서버 실행 구성과 일치 여부 확인, 기본 출력은 실행별 고유 파일. 비교 명령은 조건 fingerprint 불일치·불완전 결과를 거부.
+5. 판정 경계값, 조건 변경 비교 거부, 응답 실패·잘림, 전체 실행·결과 기록을 unit/mock HTTP 테스트로 검증. 기존 smoke 회귀 테스트 및 구문 검사 수행.
+6. 실제 baseline 전체 평가 1회 및 기존 smoke 실행. 운영 안내·요구사항·현재 구조·CHANGELOG 갱신, Markdown·링크 검사 수행.
+7. Planning/Independent 양쪽 스키마 검증 및 모든 finding 판정·집계 기록. 테스트 통과 후에만 Independent Reviewer 호출, 완료 기준 충족 시 Task와 reviews/T003 함께 completed 이동.
+
+# OPEN QUESTIONS
+비한국어 문자 후보 집계의 오탐·누락 경계, 비교 조건 기록의 누락, 작은 고정 세트의 해석 한계 검토 요청.

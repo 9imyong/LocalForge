@@ -4,7 +4,7 @@ title: LocalForge 로컬 LLM 추론 환경 구축
 status: 초안
 owners: [LocalForge]
 created: 2026-09-13
-last_reviewed: 2026-09-13
+last_reviewed: 2026-09-20
 ---
 
 # 요구사항: LocalForge 로컬 LLM 추론 환경 구축
@@ -23,12 +23,12 @@ LocalForge는 개인 개발 환경에서 로컬 LLM을 실행하고 OpenAI-compa
 
 ## 이해관계자
 
-| 역할             | 필요한 결과                                                  |
+| 역할 | 필요한 결과 |
 | -------------- | ------------------------------------------------------- |
-| 개발자            | 로컬 LLM을 Coding Agent 및 개발 도구에서 사용할 수 있어야 한다.            |
-| LocalForge 운영자 | 모델, Runtime, 설정 및 GPU 자원 사용 상태를 관리할 수 있어야 한다.           |
-| AI Agent       | 표준화된 API를 통해 LLM 추론 기능을 사용할 수 있어야 한다.                   |
-| 외부 클라이언트       | 향후 MacBook 등 다른 장치에서도 동일한 LocalForge API에 접근할 수 있어야 한다. |
+| 개발자 | 로컬 LLM을 Coding Agent 및 개발 도구에서 사용할 수 있어야 한다. |
+| LocalForge 운영자 | 모델, Runtime, 설정 및 GPU 자원 사용 상태를 관리할 수 있어야 한다. |
+| AI Agent | 표준화된 API를 통해 LLM 추론 기능을 사용할 수 있어야 한다. |
+| 외부 클라이언트 | 향후 MacBook 등 다른 장치에서도 동일한 LocalForge API에 접근할 수 있어야 한다. |
 
 ## 요구사항
 
@@ -46,6 +46,7 @@ LocalForge는 개인 개발 환경에서 로컬 LLM을 실행하고 OpenAI-compa
 * REQ-INFERENCE-001-12: Benchmark는 최소 TTFT, generation throughput, VRAM 사용량, model load time을 측정할 수 있어야 한다.
 * REQ-INFERENCE-001-13: LocalForge의 Runtime 변경이 Agent 사용 방식에 불필요한 변경을 발생시키지 않아야 한다.
 * REQ-INFERENCE-001-14: Agent가 프로젝트 파일 탐색, 수정, 명령 실행 및 테스트 수행에 LLM을 사용할 수 있어야 한다.
+* REQ-INFERENCE-001-15: 고정된 한국어·코딩 평가 세트를 단일 명령으로 실행하고 응답·혼입 후보 문자 수·모델·Runtime·실행 조건을 기록해야 한다. 동일 조건 결과의 비교와 조건 불일치 거부, 자동 수치와 수동 판정 기준의 구분을 제공해야 한다.
 
 ## 인수 조건
 
@@ -132,6 +133,13 @@ LocalForge는 개인 개발 환경에서 로컬 LLM을 실행하고 OpenAI-compa
 위 항목은 v0.1 완료 후 별도 요구사항으로 확장한다.
 
 ## 품질과 제약
+
+* 응답 품질 측정:
+
+  * 고정 프롬프트·판정 규칙·실행 조건을 결과에 기록하고 재실행 가능하도록 제공
+  * 코드 제외 산문의 비한국어 문자 혼입 후보 수치화, 영문 기술 용어·고유명사의 문맥 판정은 수동 검토
+  * 수치 수집 성공과 모델 품질 합격 구분, 코딩 정답의 완전 자동 채점 제외
+  * [평가 운영 절차](../operations/quality-evaluation.md), [T003](../tasks/completed/T003-korean-coding-quality-eval.md)
 
 * 보안:
 

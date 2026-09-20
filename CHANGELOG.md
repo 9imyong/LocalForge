@@ -15,6 +15,8 @@
 
 ### 추가
 
+- 고정 한국어·코딩 응답 8건 평가와 동일 조건 비교 명령 추가, 문자 혼입 후보 자동 집계·수동 기준·실행 조건 기록
+
 - 현재 Qwen GGUF의 tool template 호환성 수정 및 직접 API 일반/SSE 도구 계약 검사 추가, T002 차단 해소
 
 - OpenCode 1.18.30 로컬 provider·격리 실행·실제 도구 검증 smoke 추가, 일반 응답·SSE·제한된 fixture Agent E2E 검증
